@@ -1,0 +1,18 @@
+{
+  "intents": [
+    {
+      "tag": "display_calendar",
+      "patterns": [
+        "What is the day today",
+        "Show me the calendar for today",
+        "What day is it today",
+        "Show me the calendar",
+        "Today is what",
+        "What day is it today"
+      ]
+    },
+    {
+      "tag": ""
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 import RPi.GPIO as GPIO
 import threading
+import random
 
 import pyttsx3
 import os
@@ -243,9 +244,6 @@ def monitor_fsr():
                 
                 if timesClicked == 2:
                     print("Sekai is awake, say a command")
-                    
-                    engine.save_to_file("Hello, USB headphones with a new voice!", "output.wav")
-                    engine.runAndWait()
 
                     # Switch to smile view
                     root.after(0, show_smile)
@@ -253,11 +251,22 @@ def monitor_fsr():
                     GPIO.output(LED_PIN, GPIO.HIGH)
                     timesClicked = 0
 
-                    while not os.path.exists("output.wav"):
-                        time.sleep(0.1)
+                    emotion = random.choices(
+                        ["happy", "angry"],
+                        weights=[9, 1]
+                    )[0]
+
+                    if emotion == "happy":
+                        audio_folder = "voices_happy"
+                    else:
+                        audio_folder = "voices_angry"
+
+                    # Pick a random file inside that folder
+                    files = os.listdir(audio_folder)
+                    audioToPlay = os.path.join(audio_folder, random.choice(files))
 
                     # Play through USB headphones
-                    os.system("aplay -D plughw:1,0 output.wav")
+                    os.system(f"aplay -D plughw:1,0 {audioToPlay}")
                     
                     # Wait 5 seconds then turn off LED (but keep smile)
                     time.sleep(5)

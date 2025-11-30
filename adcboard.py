@@ -7,7 +7,6 @@ import RPi.GPIO as GPIO
 
 
 timesClicked = 0
-isDoubleClicked = False
 isClicking = False
 
 # ----------------------------
@@ -39,7 +38,6 @@ THRESHOLD = 100  # Adjust after testing your FSR
 try:
     while True:
         fsr_value = chan.value
-       # print("FSR Value:", fsr_value, "Voltage:", round(chan.voltage, 2))
 
         if fsr_value > THRESHOLD and isClicking == False:            
             #GPIO.output(LED_PIN, GPIO.HIGH)
