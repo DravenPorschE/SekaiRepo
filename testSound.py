@@ -1,24 +1,23 @@
 import pyttsx3
-import os
 
-# Initialize engine
 engine = pyttsx3.init()
 
-# List available voices
+# List all voices
 voices = engine.getProperty('voices')
 for idx, voice in enumerate(voices):
     print(f"{idx}: {voice.name} - {voice.id}")
 
-# Choose a voice by index (e.g., 1)
-engine.setProperty('voice', voices[1].id)
+# Pick the first female voice
+female_voice = None
+for voice in voices:
+    if "f" in voice.id.lower():  # usually 'english+f1', 'english+f2'
+        female_voice = voice.id
+        break
 
-# Optional: change speed and volume
-engine.setProperty('rate', 150)    # Speed
-engine.setProperty('volume', 0.8)  # Volume 0.0 to 1.0
+if female_voice:
+    engine.setProperty('voice', female_voice)
+else:
+    print("No female voice found, using default.")
 
-# Convert text to WAV
-engine.save_to_file("Hello, USB headphones with a new voice!", "output.wav")
+engine.say("Hello! This is a female voice.")
 engine.runAndWait()
-
-# Play through USB headphones
-os.system("aplay -D plughw:1,0 output.wav")
