@@ -1,31 +1,8 @@
-from google.cloud import texttospeech
-import pygame
+import pyttsx3
 
-# Authenticate with JSON key
-client = texttospeech.TextToSpeechClient.from_service_account_file("path/to/key.json")
+engine = pyttsx3.init()
+engine.setProperty('rate', 150)   # speed
+engine.setProperty('volume', 0.8) # volume (0.0 to 1.0)
 
-synthesis_input = texttospeech.SynthesisInput(text="Hello from Google Cloud TTS!")
-
-voice = texttospeech.VoiceSelectionParams(
-    language_code="en-US", 
-    ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL
-)
-
-audio_config = texttospeech.AudioConfig(
-    audio_encoding=texttospeech.AudioEncoding.MP3
-)
-
-response = client.synthesize_speech(
-    input=synthesis_input, voice=voice, audio_config=audio_config
-)
-
-# Save the file
-with open("speech.mp3", "wb") as out:
-    out.write(response.audio_content)
-
-# Play it
-pygame.mixer.init()
-pygame.mixer.music.load("speech.mp3")
-pygame.mixer.music.play()
-while pygame.mixer.music.get_busy():
-    pygame.time.Clock().tick(10)
+engine.say("Hello, this is offline text to speech.")
+engine.runAndWait()
