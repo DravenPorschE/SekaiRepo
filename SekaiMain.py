@@ -2,42 +2,94 @@ import tkinter as tk
 import calendar
 from datetime import date
 
-# Get today
 today = date.today()
-year, month, day = today.year, today.month, today.day
+year = today.year
+month = today.month
+day = today.day
 
 calendar.setfirstweekday(calendar.SUNDAY)
 
-# Create main window
 root = tk.Tk()
 root.title("Calendar UI")
 
-# Get actual screen size
-screen_width = root.winfo_screenwidth()
-screen_height = root.winfo_screenheight()
+# Set fixed screen size
+screen_width = 480
+screen_height = 320
 root.geometry(f"{screen_width}x{screen_height}")
+root.resizable(False, False)
 root.configure(bg="white")
 
-# Quit function
-def quit_app(event=None):
-    root.destroy()
-
-# Bind "q" key to quit
-root.bind("q", quit_app)
+# Current view state
+current_view = "calendar"
 
 # GRID SETUP
 root.rowconfigure(0, weight=1)
 root.columnconfigure(0, weight=1)
 
-main = tk.Frame(root, bg="white")
-main.grid(row=0, column=0, sticky="nsew")
-main.columnconfigure(0, weight=0)  # Fixed width for left panel
-main.columnconfigure(1, weight=1)  # Expandable right panel
-main.rowconfigure(0, weight=1)
+# Container for all views
+container = tk.Frame(root, bg="white")
+container.grid(row=0, column=0, sticky="nsew")
+container.rowconfigure(0, weight=1)
+container.columnconfigure(0, weight=1)
 
-# LEFT PANEL
+# CALENDAR VIEW FRAME
+calendar_frame = tk.Frame(container, bg="white")
+calendar_frame.grid(row=0, column=0, sticky="nsew")
+calendar_frame.columnconfigure(0, weight=0)  # Fixed width for left panel
+calendar_frame.columnconfigure(1, weight=1)  # Expandable right panel
+calendar_frame.rowconfigure(0, weight=1)
+
+# SMILING FIGURE VIEW FRAME
+smile_frame = tk.Frame(container, bg="white")
+smile_frame.rowconfigure(0, weight=1)
+smile_frame.columnconfigure(0, weight=1)
+
+# Create smiling figure using canvas
+canvas = tk.Canvas(smile_frame, bg="white", highlightthickness=0)
+canvas.grid(row=0, column=0, sticky="nsew")
+
+def draw_smile():
+    canvas.delete("all")
+    w = canvas.winfo_width()
+    h = canvas.winfo_height()
+    
+    if w <= 1 or h <= 1:  # Wait for proper sizing
+        canvas.after(100, draw_smile)
+        return
+    
+    # Calculate sizes based on canvas dimensions
+    size = min(w, h) * 0.6
+    cx, cy = w // 2, h // 2
+    
+    # Face circle (yellow)
+    canvas.create_oval(cx - size//2, cy - size//2, cx + size//2, cy + size//2, 
+                      fill="#FFD700", outline="black", width=3)
+    
+    # Eyes
+    eye_y = cy - size//6
+    eye_offset = size//5
+    eye_size = size//12
+    # Left eye
+    canvas.create_oval(cx - eye_offset - eye_size, eye_y - eye_size,
+                      cx - eye_offset + eye_size, eye_y + eye_size,
+                      fill="black")
+    # Right eye
+    canvas.create_oval(cx + eye_offset - eye_size, eye_y - eye_size,
+                      cx + eye_offset + eye_size, eye_y + eye_size,
+                      fill="black")
+    
+    # Smile (arc)
+    mouth_y = cy + size//8
+    mouth_width = size//3
+    canvas.create_arc(cx - mouth_width, mouth_y - size//8,
+                     cx + mouth_width, mouth_y + size//4,
+                     start=0, extent=-180, style=tk.ARC, width=3)
+
+canvas.bind("<Configure>", lambda e: draw_smile())
+
+# LEFT PANEL (Calendar view)
 left_width = int(screen_width * 0.35)
-left = tk.Frame(main, bg="white", highlightbackground="black", highlightthickness=2, width=left_width)
+left = tk.Frame(calendar_frame, bg="white", highlightbackground="black", highlightthickness=2, width=left_width)
 left.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 left.grid_propagate(False)
 
@@ -59,13 +111,13 @@ year_label = tk.Label(left, text=str(year), bg="white", fg="red",
                       font=("Arial", max(int(left_width*0.07), 14), "bold"))
 year_label.grid(row=2, column=0, sticky="nsew")
 
-# RIGHT PANEL
-right = tk.Frame(main, bg="white")
+# RIGHT PANEL (Calendar view)
+right = tk.Frame(calendar_frame, bg="white")
 right.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
 
 # Spread evenly
 cols = 7
-rows = 7  # 1 header row + 6 possible weeks
+rows = 7
 for i in range(cols):
     right.columnconfigure(i, weight=1)
 for i in range(rows):
@@ -95,5 +147,36 @@ for r, week in enumerate(month_layout):
             tk.Label(right, text=str(num), bg="white", font=("Arial", max(int(screen_width*0.02), 10), "bold")).grid(
                 row=row_start+r, column=c, sticky="nsew", padx=1, pady=1
             )
+
+# View switching functions
+def show_calendar():
+    global current_view
+    current_view = "calendar"
+    smile_frame.grid_remove()
+    calendar_frame.grid(row=0, column=0, sticky="nsew")
+    root.title("Calendar UI - Press 'b' for smile")
+
+def show_smile():
+    global current_view
+    current_view = "smile"
+    calendar_frame.grid_remove()
+    smile_frame.grid(row=0, column=0, sticky="nsew")
+    draw_smile()
+    root.title("Smile View - Press 'a' for calendar")
+
+def switch_view(event):
+    key = event.char.lower()
+    if key == 'a':
+        show_calendar()
+    elif key == 'b':
+        show_smile()
+    elif key == 'q':
+        root.destroy()
+
+# Bind keys
+root.bind('<Key>', switch_view)
+
+# Start with calendar view
+show_calendar()
 
 root.mainloop()
