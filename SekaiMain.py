@@ -80,53 +80,104 @@ smile_frame = tk.Frame(container, bg="white")
 smile_frame.rowconfigure(0, weight=1)
 smile_frame.columnconfigure(0, weight=1)
 
+# Label to display GIF
+face_label = tk.Label(smile_frame, bg="white")
+face_label.grid(row=0, column=0, sticky="nsew")
+
+# Variables for GIF animation and mood
+current_gif_frames = []
+current_frame_index = 0
+gif_animation_id = None
+current_mood = "happy"
+sleep_timer_id = None
+last_interaction_time = time.time()
+
+def load_gif(gif_name):
+    """Load GIF frames from sekai_faces folder"""
+    global current_gif_frames
+    try:
+        from PIL import Image, ImageTk
+        gif_path = os.path.join("sekai_faces", gif_name)
+        img = Image.open(gif_path)
+        
+        frames = []
+        try:
+            while True:
+                # Resize frame to fit screen
+                frame = img.copy()
+                frame = frame.resize((screen_width, screen_height), Image.Resampling.LANCZOS)
+                frames.append(ImageTk.PhotoImage(frame))
+                img.seek(len(frames))
+        except EOFError:
+            pass
+        
+        current_gif_frames = frames
+        return frames
+    except Exception as e:
+        print(f"Error loading GIF {gif_name}: {e}")
+        return []
+
+def animate_gif():
+    """Animate the current GIF"""
+    global current_frame_index, gif_animation_id
+    
+    if current_gif_frames:
+        face_label.config(image=current_gif_frames[current_frame_index])
+        current_frame_index = (current_frame_index + 1) % len(current_gif_frames)
+        gif_animation_id = face_label.after(100, animate_gif)
+
+def set_mood(mood):
+    """Set Sekai's mood and display appropriate GIF"""
+    global current_mood, current_frame_index, last_interaction_time
+    
+    current_mood = mood
+    current_frame_index = 0
+    last_interaction_time = time.time()
+    
+    # Cancel existing animation
+    if gif_animation_id:
+        face_label.after_cancel(gif_animation_id)
+    
+    # Load and animate new GIF
+    gif_name = f"{mood}.gif"
+    load_gif(gif_name)
+    animate_gif()
+    
+    # Reset sleep timer
+    reset_sleep_timer()
+
+def reset_sleep_timer():
+    """Reset the sleep timer"""
+    global sleep_timer_id, last_interaction_time
+    
+    last_interaction_time = time.time()
+    
+    if sleep_timer_id:
+        root.after_cancel(sleep_timer_id)
+    
+    # Only set timer if not already sleeping and in smile view
+    if current_mood != "sleeping" and current_view == "smile":
+        sleep_timer_id = root.after(20000, go_to_sleep)
+
+def go_to_sleep():
+    """Switch to sleeping mode after inactivity"""
+    global current_mood
+    if current_view == "smile" and current_mood != "sleeping":
+        set_mood("sleeping")
+
+def check_inactivity():
+    """Continuously check for inactivity"""
+    if current_view == "smile":
+        elapsed = time.time() - last_interaction_time
+        if elapsed >= 20 and current_mood != "sleeping":
+            go_to_sleep()
+    root.after(1000, check_inactivity)
+
 # WEATHER VIEW FRAME
 weather_frame = tk.Frame(container, bg="white")
 weather_frame.rowconfigure(0, weight=1)
 weather_frame.columnconfigure(0, weight=1)
 weather_frame.columnconfigure(1, weight=1)
-
-# Create smiling figure using canvas
-canvas = tk.Canvas(smile_frame, bg="white", highlightthickness=0)
-canvas.grid(row=0, column=0, sticky="nsew")
-
-def draw_smile():
-    canvas.delete("all")
-    w = canvas.winfo_width()
-    h = canvas.winfo_height()
-    
-    if w <= 1 or h <= 1:
-        canvas.after(100, draw_smile)
-        return
-    
-    size = min(w, h) * 0.6
-    cx, cy = w // 2, h // 2
-    
-    # Face circle (yellow)
-    canvas.create_oval(cx - size//2, cy - size//2, cx + size//2, cy + size//2, 
-                      fill="#FFD700", outline="black", width=3)
-    
-    # Eyes
-    eye_y = cy - size//6
-    eye_offset = size//5
-    eye_size = size//12
-    # Left eye
-    canvas.create_oval(cx - eye_offset - eye_size, eye_y - eye_size,
-                      cx - eye_offset + eye_size, eye_y + eye_size,
-                      fill="black")
-    # Right eye
-    canvas.create_oval(cx + eye_offset - eye_size, eye_y - eye_size,
-                      cx + eye_offset + eye_size, eye_y + eye_size,
-                      fill="black")
-    
-    # Smile (arc)
-    mouth_y = cy + size//8
-    mouth_width = size//3
-    canvas.create_arc(cx - mouth_width, mouth_y - size//8,
-                     cx + mouth_width, mouth_y + size//4,
-                     start=0, extent=-180, style=tk.ARC, width=3)
-
-canvas.bind("<Configure>", lambda e: draw_smile())
 
 # Weather data (test data matching your image)
 weather_data = {
