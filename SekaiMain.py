@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import PhotoImage
 import calendar
 from datetime import date
 import time
@@ -9,24 +10,7 @@ from adafruit_ads1x15.analog_in import AnalogIn
 import RPi.GPIO as GPIO
 import threading
 import random
-
-import pyttsx3
 import os
-
-# Initialize engine
-engine = pyttsx3.init()
-
-# List available voices
-voices = engine.getProperty('voices')
-for idx, voice in enumerate(voices):
-    print(f"{idx}: {voice.name} - {voice.id}")
-
-# Choose a voice by index (e.g., 1)
-engine.setProperty('voice', voices[1].id)
-
-# Optional: change speed and volume
-engine.setProperty('rate', 150)    # Speed
-engine.setProperty('volume', 0.8)  # Volume 0.0 to 1.0
 
 today = date.today()
 year = today.year
@@ -96,6 +80,12 @@ smile_frame = tk.Frame(container, bg="white")
 smile_frame.rowconfigure(0, weight=1)
 smile_frame.columnconfigure(0, weight=1)
 
+# WEATHER VIEW FRAME
+weather_frame = tk.Frame(container, bg="white")
+weather_frame.rowconfigure(0, weight=1)
+weather_frame.columnconfigure(0, weight=1)
+weather_frame.columnconfigure(1, weight=1)
+
 # Create smiling figure using canvas
 canvas = tk.Canvas(smile_frame, bg="white", highlightthickness=0)
 canvas.grid(row=0, column=0, sticky="nsew")
@@ -137,6 +127,88 @@ def draw_smile():
                      start=0, extent=-180, style=tk.ARC, width=3)
 
 canvas.bind("<Configure>", lambda e: draw_smile())
+
+# Weather data (test data matching your image)
+weather_data = {
+    "current": {
+        "day": "Monday",
+        "time": "1:40pm",
+        "temp": "34 C",
+        "location": "Lipa City",
+        "icon": "partly_cloudy_weather.png"
+    },
+    "forecast": [
+        {"day": "Tuesday", "time": "1:40pm", "temp": "37C", "icon": "partly_cloudy_weather.png"},
+        {"day": "Wednesday", "time": "1:40pm", "temp": "37C", "icon": "sunny_weather.png"},
+        {"day": "Thursday", "time": "1:40pm", "temp": "37C", "icon": "thunderstorm_weather.png"},
+        {"day": "Friday", "time": "1:40pm", "temp": "37C", "icon": "cloudy_weather.png"}
+    ]
+}
+
+# Function to load weather icon
+def load_weather_icon(icon_name, size=(80, 80)):
+    try:
+        from PIL import Image, ImageTk
+        img_path = os.path.join("weather_assets", icon_name)
+        img = Image.open(img_path)
+        img = img.resize(size, Image.Resampling.LANCZOS)
+        return ImageTk.PhotoImage(img)
+    except Exception as e:
+        print(f"Error loading icon {icon_name}: {e}")
+        return None
+
+# Build weather view
+def build_weather_view():
+    # Left panel - Current weather
+    left_weather = tk.Frame(weather_frame, bg="#f0f0f0", highlightbackground="gray", highlightthickness=1)
+    left_weather.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+    
+    # Day and time
+    tk.Label(left_weather, text=f"{weather_data['current']['day']} {weather_data['current']['time']}", 
+             bg="#f0f0f0", font=("Arial", 14), anchor="w").pack(pady=(10, 5), padx=10, fill="x")
+    
+    # Weather icon
+    icon_current = load_weather_icon(weather_data['current']['icon'], (120, 120))
+    if icon_current:
+        icon_label = tk.Label(left_weather, image=icon_current, bg="#f0f0f0")
+        icon_label.image = icon_current  # Keep reference
+        icon_label.pack(pady=10)
+    
+    # Temperature
+    tk.Label(left_weather, text=weather_data['current']['temp'], 
+             bg="#f0f0f0", font=("Arial", 32, "bold")).pack(pady=5)
+    
+    # Location
+    tk.Label(left_weather, text=weather_data['current']['location'], 
+             bg="#f0f0f0", font=("Arial", 16)).pack(pady=(5, 10))
+    
+    # Right panel - Forecast
+    right_weather = tk.Frame(weather_frame, bg="white")
+    right_weather.grid(row=0, column=1, sticky="nsew", padx=(0, 10), pady=10)
+    
+    for idx, forecast in enumerate(weather_data['forecast']):
+        forecast_card = tk.Frame(right_weather, bg="#f0f0f0", highlightbackground="gray", highlightthickness=1)
+        forecast_card.pack(fill="x", pady=5, padx=5)
+        
+        # Create inner frame for icon and text
+        inner = tk.Frame(forecast_card, bg="#f0f0f0")
+        inner.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Icon on the left
+        icon = load_weather_icon(forecast['icon'], (40, 40))
+        if icon:
+            icon_lbl = tk.Label(inner, image=icon, bg="#f0f0f0")
+            icon_lbl.image = icon  # Keep reference
+            icon_lbl.pack(side="left", padx=(0, 10))
+        
+        # Text on the right
+        text_frame = tk.Frame(inner, bg="#f0f0f0")
+        text_frame.pack(side="left", fill="both", expand=True)
+        
+        tk.Label(text_frame, text=forecast['day'], bg="#f0f0f0", 
+                font=("Arial", 12, "bold"), anchor="w").pack(fill="x")
+        tk.Label(text_frame, text=f"{forecast['time']} - {forecast['temp']}", 
+                bg="#f0f0f0", font=("Arial", 10), anchor="w").pack(fill="x")
 
 # LEFT PANEL (Calendar view)
 left_width = int(screen_width * 0.35)
@@ -198,11 +270,15 @@ for r, week in enumerate(month_layout):
                 row=row_start+r, column=c, sticky="nsew", padx=1, pady=1
             )
 
+# Build weather view
+build_weather_view()
+
 # View switching functions
 def show_calendar():
     global current_view
     current_view = "calendar"
     smile_frame.grid_remove()
+    weather_frame.grid_remove()
     calendar_frame.grid(row=0, column=0, sticky="nsew")
     root.title("Calendar UI")
 
@@ -210,9 +286,18 @@ def show_smile():
     global current_view
     current_view = "smile"
     calendar_frame.grid_remove()
+    weather_frame.grid_remove()
     smile_frame.grid(row=0, column=0, sticky="nsew")
-    draw_smile()
+    set_mood("happy")  # Default to happy when showing smile
     root.title("Sekai is listening...")
+
+def show_weather():
+    global current_view
+    current_view = "weather"
+    calendar_frame.grid_remove()
+    smile_frame.grid_remove()
+    weather_frame.grid(row=0, column=0, sticky="nsew")
+    root.title("Weather")
 
 def switch_view(event):
     key = event.char.lower()
@@ -220,6 +305,8 @@ def switch_view(event):
         show_calendar()
     elif key == 'b':
         show_smile()
+    elif key == 'c':
+        show_weather()
     elif key == 'q':
         cleanup_and_quit()
 
@@ -245,21 +332,29 @@ def monitor_fsr():
                 if timesClicked == 2:
                     print("Sekai is awake, say a command")
 
-                    # Switch to smile view
-                    root.after(0, show_smile)
-                    # Turn on LED
-                    GPIO.output(LED_PIN, GPIO.HIGH)
-                    timesClicked = 0
-
+                    # Determine emotion
                     emotion = random.choices(
                         ["happy", "angry"],
                         weights=[9, 1]
                     )[0]
 
+                    # Switch to smile view first
+                    if current_view != "smile":
+                        root.after(0, show_smile)
+                    
+                    # Set the mood based on emotion
+                    root.after(100, lambda e=emotion: set_mood(e))
+                    
+                    # Turn on LED
+                    GPIO.output(LED_PIN, GPIO.HIGH)
+                    timesClicked = 0
+
                     if emotion == "happy":
                         audio_folder = "voices_happy"
+                        print("Sekai is happy!")
                     else:
                         audio_folder = "voices_angry"
+                        print("Sekai is angry!")
 
                     # Pick a random file inside that folder
                     files = os.listdir(audio_folder)
@@ -287,8 +382,11 @@ def monitor_fsr():
 fsr_thread = threading.Thread(target=monitor_fsr, daemon=True)
 fsr_thread.start()
 
-# Start with calendar view
-show_calendar()
+# Start inactivity checker
+check_inactivity()
+
+# Start with weather view to test the design
+show_weather()
 
 # Handle window close
 root.protocol("WM_DELETE_WINDOW", cleanup_and_quit)
