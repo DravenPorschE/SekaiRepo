@@ -17,7 +17,7 @@ main_frame.pack(fill=BOTH, expand=True)
 # Try to load and display the GIF
 try:
     # Construct path to GIF
-    gif_path = os.path.join("sekai_faces", "happy.gif")
+    gif_path = os.path.join("sekai_faces", "happy.GIF")
     
     # Open GIF and get dimensions
     temp_img = Image.open(gif_path)
