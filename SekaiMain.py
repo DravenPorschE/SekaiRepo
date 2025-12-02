@@ -101,7 +101,7 @@ def load_gif(gif_name):
     global current_gif_frames
     try:
         from PIL import Image, ImageTk
-        gif_path = os.path.join("sekai_faces", gif_name)
+        gif_path = os.path.join("~/sekai_faces", gif_name)
         img = Image.open(gif_path)
         
         frames = []
@@ -446,10 +446,6 @@ def monitor_fsr():
                     
                     # Set the mood based on emotion
                     root.after(100, lambda e=emotion: set_mood(e))
-                    
-                    # Turn on LED
-                    GPIO.output(LED_PIN, GPIO.HIGH)
-                    timesClicked = 0
 
                     if emotion == "happy":
                         audio_folder = "voices_happy"
@@ -464,6 +460,10 @@ def monitor_fsr():
 
                     # Play through USB headphones
                     os.system(f"aplay -D plughw:1,0 {audioToPlay}")
+                    
+                    # Turn on LED
+                    GPIO.output(LED_PIN, GPIO.HIGH)
+                    timesClicked = 0
                     
                     # Wait 5 seconds then turn off LED (but keep smile)
                     time.sleep(5)
